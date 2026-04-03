@@ -38,17 +38,17 @@ struct NotchView: View {
     var body: some View {
         VStack(spacing: 0) {
             if manager.isFnPressed {
-                HStack(spacing: 4) {
-                    ForEach(0..<12) { i in
+                HStack(spacing: 6) {
+                    ForEach(0..<6) { i in
                         RoundedRectangle(cornerRadius: 2)
                             .fill(Color.white)
-                            .frame(width: 4, height: barHeight(for: i))
+                            .frame(width: 6, height: barHeight(for: i))
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
                 .background(Color.black)
-                .cornerRadius(12)
+                .cornerRadius(16)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
             Spacer()
@@ -58,15 +58,16 @@ struct NotchView: View {
     }
 
     private func barHeight(for index: Int) -> CGFloat {
-        // Create a symmetric waveform look
-        let baseHeight: CGFloat = 4
-        let multiplier = CGFloat.random(in: 0.8...1.2) // Add some jitter
+        let baseHeight: CGFloat = 6
         let level = CGFloat(manager.audioManager.audioLevel)
         
-        let center = 5.5
-        let dist = abs(Double(index) - center)
-        let factor = max(0.2, (6.0 - dist) / 6.0)
+        // Boost the level significantly to make it more noticeable
+        let boostedLevel = pow(level, 0.5) // Squaring the root makes it more reactive to low volumes
         
-        return baseHeight + (level * 30 * factor * multiplier)
+        // Symmetrical heights for the 6 bars
+        let heights: [CGFloat] = [0.4, 0.7, 1.0, 1.0, 0.7, 0.4]
+        let factor = heights[index]
+        
+        return baseHeight + (boostedLevel * 35 * factor)
     }
 }

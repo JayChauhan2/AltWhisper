@@ -58,12 +58,16 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     private func startMonitoring() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             self?.audioRecorder?.updateMeters()
-            let power = self?.audioRecorder?.averagePower(forChannel: 0) ?? -60.0
+            let power = self?.audioRecorder?.averagePower(forChannel: 0) ?? -160.0
             
-            // Normalize the level from db (-60 to 0) to 0.0 to 1.0
-            let level = max(0.2, CGFloat(power + 60) / 60.0)
+            // Normalize level: typical speech is -50dB to -10dB.
+            // We map this range to 0.0 - 1.0 for the UI.
+            let minDb: Float = -50.0
+            let maxDb: Float = -10.0
+            let level = (max(minDb, min(maxDb, power)) - minDb) / (maxDb - minDb)
+            
             DispatchQueue.main.async {
-                self?.audioLevel = Float(level)
+                self?.audioLevel = level
             }
         }
     }
