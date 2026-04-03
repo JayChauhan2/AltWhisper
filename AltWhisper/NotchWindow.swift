@@ -57,7 +57,7 @@ struct NotchView: View {
     }
 
     private func barHeight(for index: Int) -> CGFloat {
-        let baseHeight: CGFloat = 6
+        let baseHeight: CGFloat = 5
         let level = CGFloat(manager.audioLevel)
         
         // Boost the level significantly to make it more noticeable

@@ -12,19 +12,22 @@ class TranscriptionService {
         }
     }
     
-    func transcribe(fileURL: URL) {
+    func transcribe(fileURL: URL, completion: @escaping (String?) -> Void) {
         guard !apiKey.isEmpty else {
             print("❌ Cannot transcribe: GROQ_API_KEY is not set")
+            completion(nil)
             return
         }
         
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             print("❌ Audio file not found at: \(fileURL.path)")
+            completion(nil)
             return
         }
         
         guard let audioData = try? Data(contentsOf: fileURL) else {
             print("❌ Failed to read audio file")
+            completion(nil)
             return
         }
         
@@ -59,11 +62,13 @@ class TranscriptionService {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ Transcription request failed: \(error.localizedDescription)")
+                completion(nil)
                 return
             }
             
             guard let data = data else {
                 print("❌ No data received from Groq")
+                completion(nil)
                 return
             }
             
@@ -72,14 +77,17 @@ class TranscriptionService {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let text = json["text"] as? String {
                     print("📝 Transcription: \(text)")
+                    completion(text)
                 } else {
                     // Print raw response for debugging
                     let rawResponse = String(data: data, encoding: .utf8) ?? "unreadable"
                     print("⚠️  Unexpected response: \(rawResponse)")
+                    completion(nil)
                 }
             } catch {
                 let rawResponse = String(data: data, encoding: .utf8) ?? "unreadable"
                 print("❌ Failed to parse response: \(rawResponse)")
+                completion(nil)
             }
         }.resume()
     }

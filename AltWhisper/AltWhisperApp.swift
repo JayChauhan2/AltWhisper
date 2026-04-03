@@ -15,8 +15,10 @@ class KeyboardManager: NSObject, ObservableObject {
     @Published var audioLevel: Float = 0.0
     let audioManager = AudioManager()
     let transcriptionService = TranscriptionService()
+    let textInjector = TextInjector()
     private var cancellables = Set<AnyCancellable>()
     private var notchWindow: NotchWindow?
+    private var targetApp: NSRunningApplication?  // The app that was active when fn was pressed
 
     override init() {
         super.init()
@@ -29,6 +31,11 @@ class KeyboardManager: NSObject, ObservableObject {
     }
 
     func setupMonitor() {
+        // Prompt for accessibility if we don't have it yet
+        let promptOption = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+        let options = [promptOption: true] as CFDictionary
+        let _ = AXIsProcessTrustedWithOptions(options)
+        
         let contentRect = NSRect(x: 0, y: 0, width: 230, height: 80)
         let window = NotchWindow(contentRect: contentRect)
         
@@ -59,6 +66,9 @@ class KeyboardManager: NSObject, ObservableObject {
             if isFunctionKey {
                 if !self.isFnPressed {
                     self.isFnPressed = true
+                    // Snapshot the frontmost app NOW, before anything changes focus
+                    self.targetApp = NSWorkspace.shared.frontmostApplication
+                    print("🎯 Target app: \(self.targetApp?.localizedName ?? "unknown")")
                     self.audioManager.startRecording()
                 }
             } else {
@@ -68,7 +78,17 @@ class KeyboardManager: NSObject, ObservableObject {
                     
                     // Send recording to Groq for transcription
                     if let recordingURL = self.audioManager.getRecordingURL() {
-                        self.transcriptionService.transcribe(fileURL: recordingURL)
+                        self.transcriptionService.transcribe(fileURL: recordingURL) { [weak self] text in
+                            guard let self = self, let text = text, !text.isEmpty else {
+                                print("⚠️  No transcription text to inject")
+                                return
+                            }
+                            
+                            DispatchQueue.main.async {
+                                print("⌨️  Injecting transcribed text into \(self.targetApp?.localizedName ?? "unknown"): \(text)")
+                                self.textInjector.injectText(text, into: self.targetApp)
+                            }
+                        }
                     }
                 }
             }
