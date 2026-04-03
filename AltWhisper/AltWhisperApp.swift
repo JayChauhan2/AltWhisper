@@ -14,13 +14,12 @@ class KeyboardManager: NSObject, ObservableObject {
     @Published var isAccessibilityTrusted = AXIsProcessTrusted()
     @Published var audioLevel: Float = 0.0
     let audioManager = AudioManager()
+    let transcriptionService = TranscriptionService()
     private var cancellables = Set<AnyCancellable>()
     private var notchWindow: NotchWindow?
 
     override init() {
         super.init()
-        // Forward audioLevel changes from AudioManager to this object
-        // so SwiftUI views observing KeyboardManager will re-render
         audioManager.$audioLevel
             .receive(on: DispatchQueue.main)
             .sink { [weak self] level in
@@ -30,7 +29,6 @@ class KeyboardManager: NSObject, ObservableObject {
     }
 
     func setupMonitor() {
-        // Initialize the notch window
         let contentRect = NSRect(x: 0, y: 0, width: 230, height: 80)
         let window = NotchWindow(contentRect: contentRect)
         
@@ -39,18 +37,15 @@ class KeyboardManager: NSObject, ObservableObject {
         window.makeKeyAndOrderFront(nil)
         self.notchWindow = window
 
-        // Local monitor for when the app is active
         NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.updateFnKeyState(event)
             return event
         }
         
-        // Global monitor for when any other app is active
         NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.updateFnKeyState(event)
         }
         
-        // Timer to periodically re-check accessibility status
         Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             DispatchQueue.main.async {
                 self?.isAccessibilityTrusted = AXIsProcessTrusted()
@@ -70,6 +65,11 @@ class KeyboardManager: NSObject, ObservableObject {
                 if self.isFnPressed {
                     self.isFnPressed = false
                     self.audioManager.stopRecording()
+                    
+                    // Send recording to Groq for transcription
+                    if let recordingURL = self.audioManager.getRecordingURL() {
+                        self.transcriptionService.transcribe(fileURL: recordingURL)
+                    }
                 }
             }
         }

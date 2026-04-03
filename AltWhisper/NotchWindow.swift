@@ -41,13 +41,12 @@ struct NotchView: View {
                 HStack(spacing: 6) {
                     ForEach(0..<6) { i in
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.white)
+                            .fill(Color.primary)
                             .frame(width: 4, height: barHeight(for: i))
                     }
                 }
                 .frame(width: 100, height: 44)
-                .background(Color.black)
-                .cornerRadius(16)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
             Spacer()
