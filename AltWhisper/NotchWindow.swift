@@ -42,11 +42,10 @@ struct NotchView: View {
                     ForEach(0..<6) { i in
                         RoundedRectangle(cornerRadius: 2)
                             .fill(Color.white)
-                            .frame(width: 6, height: barHeight(for: i))
+                            .frame(width: 4, height: barHeight(for: i))
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .frame(width: 100, height: 44)
                 .background(Color.black)
                 .cornerRadius(16)
                 .transition(.move(edge: .top).combined(with: .opacity))
@@ -54,15 +53,16 @@ struct NotchView: View {
             Spacer()
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: manager.isFnPressed)
+        .animation(.easeOut(duration: 0.08), value: manager.audioLevel)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func barHeight(for index: Int) -> CGFloat {
         let baseHeight: CGFloat = 6
-        let level = CGFloat(manager.audioManager.audioLevel)
+        let level = CGFloat(manager.audioLevel)
         
         // Boost the level significantly to make it more noticeable
-        let boostedLevel = pow(level, 0.5) // Squaring the root makes it more reactive to low volumes
+        let boostedLevel = pow(level, 0.5)
         
         // Symmetrical heights for the 6 bars
         let heights: [CGFloat] = [0.4, 0.7, 1.0, 1.0, 0.7, 0.4]

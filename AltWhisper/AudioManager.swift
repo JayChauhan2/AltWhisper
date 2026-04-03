@@ -64,7 +64,10 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
             // We map this range to 0.0 - 1.0 for the UI.
             let minDb: Float = -50.0
             let maxDb: Float = -10.0
-            let level = (max(minDb, min(maxDb, power)) - minDb) / (maxDb - minDb)
+            let level = max(0.0, (max(minDb, min(maxDb, power)) - minDb) / (maxDb - minDb))
+            
+            // Debug: print so we can verify in Xcode console
+            print("Audio power: \(power) dB -> level: \(level)")
             
             DispatchQueue.main.async {
                 self?.audioLevel = level
